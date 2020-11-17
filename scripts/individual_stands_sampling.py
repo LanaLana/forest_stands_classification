@@ -298,3 +298,76 @@ class Generator:
             if np.sum(np.where(cloud_mask==0,1,0)) > self.IMG_ROW*self.IMG_COL / 10:
                 del json_data[key]
         return json_data
+    
+def f1_score(json_file_cl0_val, json_file_cl1_val):
+    img_cl_0, mask_cl_0 = pred_val(json_file_cl0_val)
+    img_cl_1, mask_cl_1 = pred_val(json_file_cl1_val)
+    pred_cl_0 = model.predict(img_cl_0)
+    pred_cl_1 = model.predict(img_cl_1)
+
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for ind in range(img_cl_0.shape[0]): # class 0 oak, class 1 linden
+        TP += np.sum((pred_cl_0[ind,:,:,0]>0.5)*mask_cl_0[ind,:,:,0])
+        FN += np.sum((pred_cl_0[ind,:,:,0]<0.5)*mask_cl_0[ind,:,:,0])
+
+    for ind in range(img_cl_1.shape[0]): # class 0 oak, class 1 linden
+        TN += np.sum((pred_cl_1[ind,:,:,1]>0.5)*mask_cl_1[ind,:,:,1])
+        FP += np.sum((pred_cl_1[ind,:,:,1]<0.5)*mask_cl_1[ind,:,:,1])
+
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    accuracy = (TP + TN) / (TP + TN + FP + FN) 
+    f1_cl = 2*((precision*recall)/(precision+recall))
+
+    print(f1_cl) 
+
+    TP = 0
+    FP = 0
+    TN = 0
+    FN = 0
+    for ind in range(img_cl_0.shape[0]): # class 0 oak, class 1 linden
+        TN += np.sum((pred_cl_0[ind,:,:,0]>0.5)*mask_cl_0[ind,:,:,0])
+        FP += np.sum((pred_cl_0[ind,:,:,0]<0.5)*mask_cl_0[ind,:,:,0])
+
+
+    for ind in range(img_cl_1.shape[0]): # class 0 oak, class 1 linden
+        TP += np.sum((pred_cl_1[ind,:,:,1]>0.5)*mask_cl_1[ind,:,:,1])
+        FN += np.sum((pred_cl_1[ind,:,:,1]<0.5)*mask_cl_1[ind,:,:,1])
+
+    precision = TP / (TP + FP)
+    recall = TP / (TP + FN)
+    accuracy = (TP + TN) / (TP + TN + FP + FN) 
+    f1_cl = 2*((precision*recall)/(precision+recall))
+
+    print(f1_cl) 
+    
+def create_class_weight(labels_dict,mu=0.15):
+    total = np.sum(list(labels_dict.values()))
+    keys = labels_dict.keys()
+    class_weight = dict()
+    weights_list = np.zeros((len(keys)))
+    for key in keys:
+        score = math.log(mu*total/float(labels_dict[key]))
+        #score = mu*total/float(labels_dict[key])
+        class_weight[key] = score if score > 1.0 else 1.0
+        weights_list[sorted(keys).index(key)] = class_weight[key]
+    return class_weight, weights_list
+
+def pred_val(cl_json):
+    imgarr=[]
+    maskarr=[]
+    for key in cl_json.keys():
+        imgpath = key[:-len(key.split('_')[-1])-1]
+        upper_left_x, upper_left_y, pol_width, pol_height = cl_json[key]['upper_left_x'], cl_json[key]['upper_left_y'],\
+                                                            cl_json[key]['pol_width'], cl_json[key]['pol_height']
+        img, mask = generator.get_img_mask_array(imgpath, upper_left_x, upper_left_y, pol_width, pol_height,
+                                                 key.split('_')[-1])
+        imgarr.append(img)
+        maskarr.append(mask)
+
+    imgarr = np.asarray(imgarr)
+    maskarr = np.asarray(maskarr)
+    return imgarr, maskarr
