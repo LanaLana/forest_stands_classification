@@ -322,7 +322,7 @@ def f1_score(json_file_cl0_val, json_file_cl1_val):
     accuracy = (TP + TN) / (TP + TN + FP + FN) 
     f1_cl = 2*((precision*recall)/(precision+recall))
 
-    print(f1_cl) 
+    print(round(f1_cl, 3)) 
 
     TP = 0
     FP = 0
@@ -342,7 +342,7 @@ def f1_score(json_file_cl0_val, json_file_cl1_val):
     accuracy = (TP + TN) / (TP + TN + FP + FN) 
     f1_cl = 2*((precision*recall)/(precision+recall))
 
-    print(f1_cl) 
+    print(round(f1_cl, 3)) 
     
 def create_class_weight(labels_dict,mu=0.15):
     total = np.sum(list(labels_dict.values()))
